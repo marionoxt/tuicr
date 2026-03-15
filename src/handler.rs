@@ -1629,6 +1629,51 @@ fn handle_shared_normal_action(app: &mut App, action: Action) {
             app.search_prev_in_diff();
         }
         Action::ClearSearchHighlight => app.clear_search_highlight(),
+        Action::OpenInEditor => {
+            if std::env::var("ZELLIJ").is_err() {
+                app.set_warning("Not inside a Zellij session");
+                return;
+            }
+
+            let Some(file_path) = app.current_file_path().cloned() else {
+                app.set_warning("No file at cursor");
+                return;
+            };
+            let line_num = app.get_line_at_cursor().map(|(ln, _)| ln);
+
+            let abs_path = std::env::current_dir()
+                .unwrap_or_default()
+                .join(&file_path);
+            let open_arg = match line_num {
+                Some(ln) => format!("{}:{}", abs_path.display(), ln),
+                None => format!("{}", abs_path.display()),
+            };
+
+            let commands_ok = std::process::Command::new("zellij")
+                .args(["action", "move-focus", "down"])
+                .status()
+                .is_ok_and(|s| s.success())
+                && std::process::Command::new("zellij")
+                    .args(["action", "write", "27"])
+                    .status()
+                    .is_ok_and(|s| s.success())
+                && std::process::Command::new("zellij")
+                    .args([
+                        "action",
+                        "write-chars",
+                        &format!(":open {}", open_arg),
+                    ])
+                    .status()
+                    .is_ok_and(|s| s.success())
+                && std::process::Command::new("zellij")
+                    .args(["action", "write", "13"])
+                    .status()
+                    .is_ok_and(|s| s.success());
+
+            if !commands_ok {
+                app.set_warning("Failed to send command to Zellij");
+            }
+        }
         Action::EnterVisualMode => {
             if app.get_line_at_cursor().is_some() {
                 app.enter_visual_mode_at_cursor();

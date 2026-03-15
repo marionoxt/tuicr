@@ -487,7 +487,7 @@ pub fn render_help(frame: &mut Frame, app: &mut App) {
                 "  e         ",
                 Style::default().add_modifier(Modifier::BOLD),
             ),
-            Span::raw("Open focused file in $EDITOR"),
+            Span::raw("Open file at cursor in editor (Zellij)"),
         ]),
         Line::from(vec![
             Span::styled(

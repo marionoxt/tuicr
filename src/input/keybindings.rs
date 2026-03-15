@@ -48,6 +48,7 @@ pub enum Action {
     SearchNext,
     SearchPrev,
     ClearSearchHighlight,
+    OpenInEditor,
 
     // Visual selection mode
     EnterVisualMode,
@@ -224,7 +225,9 @@ fn map_normal_mode(key: KeyEvent, leader_key: char) -> Action {
         (KeyCode::Char('v') | KeyCode::Char('V'), _) => Action::EnterVisualMode,
         (KeyCode::Char('y'), KeyModifiers::NONE) => Action::ExportToClipboard,
         (KeyCode::Char('Y'), _) => Action::CopyCommentAtCursor,
-        (KeyCode::Char('e'), KeyModifiers::NONE) => Action::EditFile,
+        // `e` opens via Zellij pane focus instead of EditFile's $EDITOR spawn;
+        // EditFile remains reachable through the `:edit` command.
+        (KeyCode::Char('e'), KeyModifiers::NONE) => Action::OpenInEditor,
         (KeyCode::Char('n'), KeyModifiers::NONE) => Action::SearchNext,
         (KeyCode::Char('N'), _) => Action::SearchPrev,
 
@@ -656,9 +659,9 @@ mod tests {
     }
 
     #[test]
-    fn should_map_lowercase_e_to_edit_file_in_normal_mode() {
+    fn should_map_lowercase_e_to_open_in_editor_in_normal_mode() {
         let action = map_normal_mode(key(KeyCode::Char('e')), DEFAULT_LEADER_KEY);
-        assert_eq!(action, Action::EditFile);
+        assert_eq!(action, Action::OpenInEditor);
     }
 
     #[test]
