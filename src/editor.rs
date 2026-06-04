@@ -71,6 +71,9 @@ impl EditorCommand {
                 args.push(OsString::from("--goto"));
                 args.push(OsString::from(format!("{}:{line}", target.path.display())));
             }
+            (EditorFamily::ColonLine, Some(line)) => {
+                args.push(OsString::from(format!("{}:{line}", target.path.display())));
+            }
             _ => args.push(target.path.as_os_str().to_os_string()),
         }
 
@@ -203,6 +206,8 @@ enum EditorFamily {
     PlusLine,
     /// Opens a source line with `$editor --goto $file:NN`.
     GotoLine,
+    /// Opens a source line with `$editor $file:NN` (e.g. helix).
+    ColonLine,
     /// Has no known line syntax; opens with `$editor $file`.
     Plain,
 }
@@ -215,6 +220,7 @@ fn editor_family(program: &str) -> EditorFamily {
     match name {
         "vi" | "vim" | "nvim" | "nano" | "emacs" | "emacsclient" => EditorFamily::PlusLine,
         "code" | "code-insiders" | "codium" | "cursor" => EditorFamily::GotoLine,
+        "hx" | "helix" => EditorFamily::ColonLine,
         _ => EditorFamily::Plain,
     }
 }
@@ -303,6 +309,15 @@ mod tests {
             let command = EditorCommand::from_editor(editor, &target(Some(42)));
             assert_eq!(command.program, editor);
             assert_eq!(args(&command), vec!["--goto", "/repo/src/main.rs:42"]);
+        }
+    }
+
+    #[test]
+    fn helix_family_receives_colon_line_path() {
+        for editor in ["hx", "helix"] {
+            let command = EditorCommand::from_editor(editor, &target(Some(42)));
+            assert_eq!(command.program, editor);
+            assert_eq!(args(&command), vec!["/repo/src/main.rs:42"]);
         }
     }
 
